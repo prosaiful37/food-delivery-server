@@ -1,9 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
-const port = process.env.port || 5000;
+const port = process.env.PORT || 5000;
 
 // middllware
 app.use(cors());
@@ -19,9 +19,33 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
-    const productsCollection = client.db("pizza_app").collection("products");
+    const productsCollection = client.db('pizza_app').collection('products');
+
+
+
+
+    // get all products
+    app.get('/products', async(req, res) => {
+        const query = {};
+        const cursor = productsCollection.find(query);
+        const products = await cursor.toArray();
+        res.send(products);
+    })
+
+    // single menu product show
+    app.get('/products/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) }
+      const order = await productsCollection.findOne(query);
+      res.send(order)
+    })
+
+
+
+
+
   } finally {
-    await client.close();
+   
   }
 }
 
