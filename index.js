@@ -40,6 +40,7 @@ async function run() {
     const productsCollection = client.db("pizza_app").collection("products");
     const ordersCollection = client.db("pizza_app").collection("orders");
     const usersCollection = client.db("pizza_app").collection("users");
+    const reviewsCollection = client.db("pizza_app").collection("reviews");
 
 
 
@@ -85,6 +86,7 @@ async function run() {
       res.send({admin: isAdmin});
     })
 
+    
 
     // user admin by email
     app.put("/users/admin/:email", verifyJWT, async (req, res) => {
@@ -138,6 +140,7 @@ async function run() {
       else {
         return res.status(403).send({ message: 'forbidden access' });
       }
+
     });
 
     // all user api 
@@ -146,6 +149,27 @@ async function run() {
       res.send(users);
     })
 
+    app.delete('/users/:email', verifyJWT, async(req, res) => {
+      const email = req.params.email;
+      const query = {email: email}
+      const user = await usersCollection.deleteOne(query)
+      res.send(user);
+    })
+
+
+
+    // all review get api
+    app.get('/reviews', async(req, res) => {
+      const reviews = await reviewsCollection.find().toArray() ;
+      res.send(reviews);
+    })
+
+    // reviews single add api for post 
+    app.post('/reviews', async(req, res) => {
+      const review = req.body;
+      const result = await reviewsCollection.insertOne(review);
+      res.send(result);
+    })
 
 
 
