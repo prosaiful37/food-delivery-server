@@ -5,6 +5,10 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
+const stripe = require('stripe')(process.env.STRIPE_SECRETE_KEY);
+
+
+
 
 // middllware
 app.use(cors());
@@ -173,21 +177,41 @@ async function run() {
 
 
     // all review get api
-    app.get('/reviews', async(req, res) => {
+    app.get('/reviews', verifyJWT, async(req, res) => {
       const reviews = await reviewsCollection.find().toArray() ;
       res.send(reviews);
     })
 
     // reviews single add api for post 
-    app.post('/reviews', async(req, res) => {
+    app.post('/reviews', verifyJWT, async(req, res) => {
       const review = req.body;
       const result = await reviewsCollection.insertOne(review);
       res.send(result);
     })
 
 
+    // payments method
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const order = req.body;
+      const price = order.price;
+      const amount = price*100;
 
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ['card']
 
+     });
+
+     res.send({
+      clientSecret: paymentIntent.client_secret,
+    })
+
+    
+    
+    
+    })
+  
 
 
 
