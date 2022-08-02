@@ -45,6 +45,7 @@ async function run() {
     const ordersCollection = client.db("pizza_app").collection("orders");
     const usersCollection = client.db("pizza_app").collection("users");
     const reviewsCollection = client.db("pizza_app").collection("reviews");
+    const paymentsCollection = client.db("pizza_app").collection("payments");
 
 
 
@@ -160,6 +161,23 @@ async function run() {
       }
 
     });
+
+    app.patch('/orders/:id', verifyJWT, async (req, res) =>{
+      const id = req.params.id;
+      const payment = req.body;
+      const filter = {_id: ObjectId(id)}
+      const updateDoc = {
+        $set: {
+          paid: true,
+          transactionId : payment.transactionId
+        }
+      }
+
+      const result = await paymentsCollection.insertOne(payment);
+      const ordersUpdate = await ordersCollection.updateOne(filter, updateDoc);
+      res.send(updateDoc);
+
+    })
 
     // all user api 
     app.get('/users', verifyJWT, async(req, res) => {
