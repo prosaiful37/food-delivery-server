@@ -195,13 +195,13 @@ async function run() {
 
 
     // all review get api
-    app.get('/reviews', verifyJWT, async(req, res) => {
+    app.get('/reviews',  async(req, res) => {
       const reviews = await reviewsCollection.find().toArray() ;
       res.send(reviews);
     })
 
     // reviews single add api for post 
-    app.post('/reviews', verifyJWT, async(req, res) => {
+    app.post('/reviews', async(req, res) => {
       const review = req.body;
       const result = await reviewsCollection.insertOne(review);
       res.send(result);
