@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+var nodemailer = require('nodemailer');
+var sgTransport = require('nodemailer-sendgrid-transport'); 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 const app = express();
@@ -21,6 +23,8 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+
+
   // verify jwt
   function verifyJWT(req, res, next) {
     const authHeader = req.headers.authorization;
@@ -36,6 +40,83 @@ const client = new MongoClient(uri, {
       next();
     });
   }
+
+
+  // email sender
+  var emailSenderOption = {
+    auth: {
+      
+      api_key: process.env.EMAIL_SENDER_KEY
+    }
+  }
+
+
+  const emailClient = nodemailer.createTransport(sgTransport(emailSenderOption));
+
+  function  sendOrderMail(order) {
+    const {userEmail, name} = order;
+    var email = {
+      from: process.env.EMAIL_SENDER,
+      to: userEmail,
+      subject: `Your order for ${name} is confirm `,
+      text: `Your order for ${name} is confirm `,
+      html: `
+        <div>
+          <p>Hello your email ${userEmail} </p>        
+          <h3>Your order ${name} is confirm </h3>  
+          <h3>Our Address</h3>
+          <p>Anodor killa,25/8 new banderban</p>
+          <p>Bangladesh</p>     
+          <a href="www.google.com" >Unsubcribe</a> 
+        
+        </div>      
+      `
+    };
+
+    emailClient.sendMail(email, function(err, info){
+      if (err ){
+        console.log(err);
+      }
+      else {
+        console.log('Message sent: ' , info);
+      }
+  });
+  }
+
+
+
+  
+  // email sender payment confirmation 
+  // function  sendPaymentConfirmaitonEmail(order) {
+  //   const {userEmail, name} = order;
+  //   var email = {
+  //     from: process.env.EMAIL_SENDER,
+  //     to: userEmail,
+  //     subject: `We have recived your payment for ${name} is confirm `,
+  //     text: `We have recived your payment for ${name} is confirm `,
+  //     html: `
+  //       <div>
+  //         <p>Hello your email ${userEmail} </p>        
+  //         <h3>Thank your, for Your paymant ${name} is confirm </h3>  
+  //         <h3>we have received your payment</h3>  
+  //         <h3>Our Address</h3>
+  //         <p>Anodor killa,25/8 new banderban</p>
+  //         <p>Bangladesh</p>     
+  //         <a href="www.google.com" >Unsubcribe</a> 
+        
+  //       </div>      
+  //     `
+  //   };
+
+  //   emailClient.sendMail(email, function(err, info){
+  //     if (err ){
+  //       console.log(err);
+  //     }
+  //     else {
+  //       console.log('Message sent: ' , info);
+  //     }
+  // });
+  // }
 
 
 async function run() {
@@ -121,6 +202,8 @@ async function run() {
     app.post("/orders", async (req, res) => {
       const order = req.body;
       const result = await ordersCollection.insertOne(order);
+      console.log('email send')
+      sendOrderMail(order)
       res.send(result);
     });
 
@@ -140,12 +223,12 @@ async function run() {
     //   res.send(orders);
     // });
 
-    // app.delete('/orders', verifyJWT, async(req, res) => {
-    //   const id = req.params.id;
-    //   const query = { _id: ObjectId(id) };
-    //   const order = await ordersCollection.deleteOne(query);
-    //   res.send(order);
-    // })
+    app.delete('/orders/:id', verifyJWT, async(req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const order = await ordersCollection.deleteOne(query);
+      res.send(order);
+    })
 
 
       app.get('/orders', verifyJWT, async (req, res) => {
@@ -172,6 +255,7 @@ async function run() {
           transactionId : payment.transactionId
         }
       }
+
 
       const result = await paymentsCollection.insertOne(payment);
       const ordersUpdate = await ordersCollection.updateOne(filter, updateDoc);
